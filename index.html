@@ -5,11 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sınıf Öğrenci Profil Yönetimi</title>
   
-  <!-- PWA ve Çevrimdışı Çalışma Ayarları -->
+  <!-- PWA, İkon ve Mobil Kurulum Ayarları -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Sınıf Takip">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#2563eb">
+
+  <!-- SVG Formatında Dinamik Uygulama İkonu -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='100' fill='%232563eb'/><path d='M256 120L100 200l156 80 156-80-156-80z' fill='%23ffffff'/><path d='M140 230v80c0 40 52 70 116 70s116-30 116-70v-80l-116 60-116-60z' fill='%23ffffff' opacity='0.9'/><circle cx='380' cy='280' r='18' fill='%23fbbf24'/><path d='M380 298v60' stroke='%23fbbf24' stroke-width='10'/></svg>">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='100' fill='%232563eb'/><path d='M256 120L100 200l156 80 156-80-156-80z' fill='%23ffffff'/><path d='M140 230v80c0 40 52 70 116 70s116-30 116-70v-80l-116 60-116-60z' fill='%23ffffff' opacity='0.9'/><circle cx='380' cy='280' r='18' fill='%23fbbf24'/><path d='M380 298v60' stroke='%23fbbf24' stroke-width='10'/></svg>">
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -19,9 +24,18 @@
   <div class="max-w-6xl mx-auto">
     <!-- Üst Bar -->
     <div class="bg-white p-6 rounded-xl shadow-md mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-800">Sınıf Öğrenci Profil Yönetimi</h1>
-        <p class="text-sm text-gray-500">Öğrenci detayları, veli bilgileri ve öğretmen dipnotları</p>
+      <div class="flex items-center gap-3">
+        <!-- Başlık İkonu -->
+        <div class="bg-blue-600 p-3 rounded-xl text-white shadow-sm">
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0112 20.055a11.952 11.952 0 01-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"></path>
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-2xl font-bold text-gray-800">Sınıf Öğrenci Profil Yönetimi</h1>
+          <p class="text-sm text-gray-500">Öğrenci detayları, veli bilgileri ve öğretmen dipnotları</p>
+        </div>
       </div>
       <div class="flex flex-wrap gap-3">
         <button onclick="openCustomFieldModal()" class="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-700 flex items-center gap-1">
@@ -327,10 +341,36 @@
     renderCustomFieldsInput();
     renderStudents();
 
-    // OTOMATİK İNTERNETSİZ ÇALIŞMA KODU (Service Worker)
+    // Dinamik Web Manifest Yapılandırması (Ana Ekrana Ekleme İkonu İçin)
+    const iconSvg = `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='100' fill='%232563eb'/><path d='M256 120L100 200l156 80 156-80-156-80z' fill='%23ffffff'/><path d='M140 230v80c0 40 52 70 116 70s116-30 116-70v-80l-116 60-116-60z' fill='%23ffffff' opacity='0.9'/><circle cx='380' cy='280' r='18' fill='%23fbbf24'/><path d='M380 298v60' stroke='%23fbbf24' stroke-width='10'/></svg>`;
+    const manifest = {
+      name: "Sınıf Öğrenci Profil Yönetimi",
+      short_name: "Sınıf Takip",
+      start_url: "./",
+      display: "standalone",
+      background_color: "#ffffff",
+      theme_color: "#2563eb",
+      icons: [
+        {
+          src: iconSvg,
+          sizes: "512x512",
+          type: "image/svg+xml",
+          purpose: "any maskable"
+        }
+      ]
+    };
+    const stringManifest = JSON.stringify(manifest);
+    const blobManifest = new Blob([stringManifest], {type: 'application/json'});
+    const manifestURL = URL.createObjectURL(blobManifest);
+    const linkElement = document.createElement('link');
+    linkElement.rel = 'manifest';
+    linkElement.href = manifestURL;
+    document.head.appendChild(linkElement);
+
+    // Service Worker (Çevrimdışı / İnternetsiz Çalışma)
     if ('serviceWorker' in navigator) {
       const swCode = `
-        const CACHE_NAME = 'sinif-pwa-v1';
+        const CACHE_NAME = 'sinif-pwa-v2';
         const urlsToCache = [
           './',
           'https://cdn.tailwindcss.com',
