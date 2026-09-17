@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Öğrenci Profil & Detaylı Bilgi Sistemi</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-4 md:p-8">
+
+  <div class="max-w-6xl mx-auto">
+    <!-- Üst Bar -->
+    <div class="bg-white p-6 rounded-xl shadow-md mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-800">Sınıf Öğrenci Profil Yönetimi</h1>
+        <p class="text-sm text-gray-500">Öğrenci detayları, veli bilgileri ve öğretmen dipnotları</p>
+      </div>
+      <div class="flex flex-wrap gap-3">
+        <button onclick="openCustomFieldModal()" class="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-700 flex items-center gap-1">
+          + Özel Alan Ekle
+        </button>
+        <button onclick="exportToExcel()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-emerald-700">
+          Excel'e Aktar
+        </button>
+      </div>
+    </div>
+
+    <!-- Form Alanı -->
+    <div class="bg-white p-6 rounded-xl shadow-md mb-8">
+      <h2 id="formTitle" class="text-lg font-semibold text-gray-700 mb-4 border-b pb-2">Yeni Öğrenci Profili Ekle</h2>
+      <form id="studentForm">
+        <input type="hidden" id="studentIndex">
+        
+        <!-- Temel & Profil Bilgileri -->
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Öğrenci No *</label>
+            <input type="number" id="no" required class="w-full p-2 border rounded focus:outline-blue-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Adı *</label>
+            <input type="text" id="name" required class="w-full p-2 border rounded focus:outline-blue-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Soyadı *</label>
+            <input type="text" id="surname" required class="w-full p-2 border rounded focus:outline-blue-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Cinsiyet</label>
+            <select id="gender" class="w-full p-2 border rounded focus:outline-blue-500">
+              <option value="">Seçiniz</option>
+              <option value="Kız">Kız</option>
+              <option value="Erkek">Erkek</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Yaş</label>
+            <input type="number" id="age" min="3" max="25" class="w-full p-2 border rounded focus:outline-blue-500">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Anne Adı Soyadı</label>
+            <input type="text" id="motherName" class="w-full p-2 border rounded focus:outline-blue-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Baba Adı Soyadı</label>
+            <input type="text" id="fatherName" class="w-full p-2 border rounded focus:outline-blue-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Kardeş Sayısı</label>
+            <input type="number" id="siblingCount" min="0" class="w-full p-2 border rounded focus:outline-blue-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Ayakkabı Numarası</label>
+            <input type="number" id="shoeSize" min="20" max="50" class="w-full p-2 border rounded focus:outline-blue-500">
+          </div>
+        </div>
+
+        <!-- Öğretmen Dipnotları -->
+        <div class="mb-4">
+          <label class="block text-xs font-semibold text-amber-700 mb-1">Öğretmen Dipnotları / Özel Notlar</label>
+          <textarea id="notes" rows="2" placeholder="Öğrenci hakkında özel notlar, gelişim takibi, ders durumu veya hatırlatmalar..." class="w-full p-2 border border-amber-200 rounded focus:outline-amber-500 bg-amber-50/30"></textarea>
+        </div>
+
+        <!-- Dinamik Eklenen Özel Alanlar -->
+        <div id="customFieldsContainer" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4"></div>
+
+        <div class="flex justify-end gap-3 border-t pt-4">
+          <button type="button" onclick="resetForm()" class="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400">Temizle / İptal</button>
+          <button type="submit" id="saveBtn" class="bg-blue-600 text-white font-medium px-6 py-2 rounded hover:bg-blue-700">Profili Kaydet</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Arama ve Filtre Barı -->
+    <div class="mb-4 flex justify-between items-center">
+      <input type="text" id="searchInput" oninput="renderStudents()" placeholder="Öğrenci adı, soyadı veya numarası ile ara..." class="w-full md:w-80 p-2 border rounded-lg shadow-sm focus:outline-blue-500">
+      <span id="studentCount" class="text-sm font-semibold text-gray-600 ml-4"></span>
+    </div>
+
+    <!-- Öğrenci Profil Kartları -->
+    <div id="studentCards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+  </div>
+
+  <script>
+    let students = JSON.parse(localStorage.getItem('myClassStudentsProfile')) || [];
+    let customFields = JSON.parse(localStorage.getItem('myClassCustomFields')) || [];
+
+    // Dinamik alan formunu render et
+    function renderCustomFieldsInput() {
+      const container = document.getElementById('customFieldsContainer');
+      container.innerHTML = '';
+      customFields.forEach(field => {
+        container.innerHTML += `
+          <div>
+            <label class="block text-xs font-semibold text-purple-700 mb-1">${field.label}</label>
+            <input type="${field.type}" id="custom_${field.key}" class="w-full p-2 border border-purple-200 rounded focus:outline-purple-500">
+          </div>
+        `;
+      });
+    }
+
+    // Profil kartlarını ekrana yazdır
+    function renderStudents() {
+      const cardsContainer = document.getElementById('studentCards');
+      const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+      cardsContainer.innerHTML = '';
+
+      students.sort((a, b) => a.no - b.no);
+
+      const filteredStudents = students.filter(s => 
+        s.name.toLowerCase().includes(searchQuery) ||
+        s.surname.toLowerCase().includes(searchQuery) ||
+        s.no.toString().includes(searchQuery)
+      );
+
+      document.getElementById('studentCount').innerText = `Toplam Öğrenci: ${filteredStudents.length}`;
+
+      filteredStudents.forEach((student) => {
+        const originalIndex = students.indexOf(student);
+
+        let customFieldsHtml = '';
+        customFields.forEach(field => {
+          const val = student.customData ? (student.customData[field.key] || '-') : '-';
+          customFieldsHtml += `
+            <div class="flex justify-between border-b py-1">
+              <span class="text-purple-700 font-medium">${field.label}:</span>
+              <span class="text-gray-800">${val}</span>
+            </div>
+          `;
+        });
+
+        const genderColor = student.gender === 'Kız' ? 'bg-pink-100 text-pink-700' : (student.gender === 'Erkek' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600');
+
+        cardsContainer.innerHTML += `
+          <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 hover:shadow-lg transition flex flex-col justify-between">
+            <div>
+              <div class="bg-blue-600 p-4 text-white flex justify-between items-center">
+                <div>
+                  <span class="text-xs font-bold uppercase tracking-wider bg-blue-700 px-2 py-0.5 rounded">No: ${student.no}</span>
+                  <h3 class="text-lg font-bold mt-1">${student.name} ${student.surname}</h3>
+                </div>
+                <div class="flex gap-2">
+                  <button onclick="editStudent(${originalIndex})" class="bg-white text-blue-600 px-2 py-1 rounded text-xs font-semibold hover:bg-blue-50">Düzenle</button>
+                  <button onclick="deleteStudent(${originalIndex})" class="bg-red-500 text-white px-2 py-1 rounded text-xs font-semibold hover:bg-red-600">Sil</button>
+                </div>
+              </div>
+              <div class="p-4 text-sm space-y-2 text-gray-600">
+                <div class="flex justify-between border-b py-1 items-center">
+                  <span class="font-medium">Cinsiyet / Yaş:</span>
+                  <span>
+                    <span class="text-xs font-bold px-2 py-0.5 rounded ${genderColor}">${student.gender || '-'}</span>
+                    <span class="text-gray-800 font-semibold ml-1">${student.age ? student.age + ' Yaş' : '-'}</span>
+                  </span>
+                </div>
+                <div class="flex justify-between border-b py-1">
+                  <span class="font-medium">Anne Adı:</span>
+                  <span class="text-gray-800">${student.motherName || '-'}</span>
+                </div>
+                <div class="flex justify-between border-b py-1">
+                  <span class="font-medium">Baba Adı:</span>
+                  <span class="text-gray-800">${student.fatherName || '-'}</span>
+                </div>
+                <div class="flex justify-between border-b py-1">
+                  <span class="font-medium">Kardeş Sayısı:</span>
+                  <span class="text-gray-800">${student.siblingCount || '0'}</span>
+                </div>
+                <div class="flex justify-between border-b py-1">
+                  <span class="font-medium">Ayakkabı No:</span>
+                  <span class="text-gray-800">${student.shoeSize || '-'}</span>
+                </div>
+                ${customFieldsHtml}
+              </div>
+            </div>
+
+            <!-- Öğretmen Dipnot Alanı -->
+            ${student.notes ? `
+              <div class="p-3 bg-amber-50 border-t border-amber-200 text-xs text-amber-900 italic">
+                <span class="font-bold not-italic block mb-0.5 text-amber-800">📌 Öğretmen Dipnotu:</span>
+                ${student.notes}
+              </div>
+            ` : ''}
+          </div>
+        `;
+      });
+
+      localStorage.setItem('myClassStudentsProfile', JSON.stringify(students));
+    }
+
+    // Form kaydetme / güncelleme
+    document.getElementById('studentForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const index = document.getElementById('studentIndex').value;
+      
+      const customData = {};
+      customFields.forEach(field => {
+        customData[field.key] = document.getElementById(`custom_${field.key}`).value;
+      });
+
+      const studentData = {
+        no: document.getElementById('no').value,
+        name: document.getElementById('name').value,
+        surname: document.getElementById('surname').value,
+        gender: document.getElementById('gender').value,
+        age: document.getElementById('age').value,
+        motherName: document.getElementById('motherName').value,
+        fatherName: document.getElementById('fatherName').value,
+        siblingCount: document.getElementById('siblingCount').value,
+        shoeSize: document.getElementById('shoeSize').value,
+        notes: document.getElementById('notes').value,
+        customData: customData
+      };
+
+      if (index === '') {
+        students.push(studentData);
+      } else {
+        students[index] = studentData;
+      }
+
+      resetForm();
+      renderStudents();
+    });
+
+    function editStudent(index) {
+      const student = students[index];
+      document.getElementById('studentIndex').value = index;
+      document.getElementById('no').value = student.no;
+      document.getElementById('name').value = student.name;
+      document.getElementById('surname').value = student.surname;
+      document.getElementById('gender').value = student.gender || '';
+      document.getElementById('age').value = student.age || '';
+      document.getElementById('motherName').value = student.motherName || '';
+      document.getElementById('fatherName').value = student.fatherName || '';
+      document.getElementById('siblingCount').value = student.siblingCount || '';
+      document.getElementById('shoeSize').value = student.shoeSize || '';
+      document.getElementById('notes').value = student.notes || '';
+
+      customFields.forEach(field => {
+        const input = document.getElementById(`custom_${field.key}`);
+        if (input && student.customData) {
+          input.value = student.customData[field.key] || '';
+        }
+      });
+
+      document.getElementById('formTitle').innerText = 'Öğrenci Profilini Düzenle';
+      document.getElementById('saveBtn').innerText = 'Değişiklikleri Kaydet';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function deleteStudent(index) {
+      if (confirm('Bu öğrenci profilini silmek istediğinize emin misiniz?')) {
+        students.splice(index, 1);
+        renderStudents();
+      }
+    }
+
+    function resetForm() {
+      document.getElementById('studentForm').reset();
+      document.getElementById('studentIndex').value = '';
+      document.getElementById('formTitle').innerText = 'Yeni Öğrenci Profili Ekle';
+      document.getElementById('saveBtn').innerText = 'Profili Kaydet';
+    }
+
+    // Özel Alan Ekleme Fonksiyonu
+    function openCustomFieldModal() {
+      const fieldLabel = prompt("Eklenecek yeni özelliğin adını girin (Örn: Kan Grubu, Veli Telefon, Alerji):");
+      if (fieldLabel) {
+        const fieldKey = 'field_' + Date.now();
+        customFields.push({ label: fieldLabel, key: fieldKey, type: 'text' });
+        localStorage.setItem('myClassCustomFields', JSON.stringify(customFields));
+        renderCustomFieldsInput();
+        renderStudents();
+      }
+    }
+
+    // Excel'e Dışa Aktar
+    function exportToExcel() {
+      const exportData = students.map(s => {
+        const row = {
+          "Okul No": s.no,
+          "Adı": s.name,
+          "Soyadı": s.surname,
+          "Cinsiyet": s.gender,
+          "Yaş": s.age,
+          "Anne Adı": s.motherName,
+          "Baba Adı": s.fatherName,
+          "Kardeş Sayısı": s.siblingCount,
+          "Ayakkabı No": s.shoeSize,
+          "Öğretmen Dipnotları": s.notes
+        };
+        customFields.forEach(f => {
+          row[f.label] = s.customData ? (s.customData[f.key] || '') : '';
+        });
+        return row;
+      });
+
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Öğrenci Profilleri");
+      XLSX.writeFile(workbook, "Sinif_Ogrenci_Profilleri.xlsx");
+    }
+
+    renderCustomFieldsInput();
+    renderStudents();
+  </script>
+</body>
+</html>
