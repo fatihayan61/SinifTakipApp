@@ -3,7 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Öğrenci Profil & Detaylı Bilgi Sistemi</title>
+  <title>Sınıf Öğrenci Profil Yönetimi</title>
+  
+  <!-- PWA ve Çevrimdışı Çalışma Ayarları -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#2563eb">
+
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
@@ -95,7 +102,7 @@
       </form>
     </div>
 
-    <!-- Arama ve Filtre Barı -->
+    <!-- Arama Barı -->
     <div class="mb-4 flex justify-between items-center">
       <input type="text" id="searchInput" oninput="renderStudents()" placeholder="Öğrenci adı, soyadı veya numarası ile ara..." class="w-full md:w-80 p-2 border rounded-lg shadow-sm focus:outline-blue-500">
       <span id="studentCount" class="text-sm font-semibold text-gray-600 ml-4"></span>
@@ -109,7 +116,6 @@
     let students = JSON.parse(localStorage.getItem('myClassStudentsProfile')) || [];
     let customFields = JSON.parse(localStorage.getItem('myClassCustomFields')) || [];
 
-    // Dinamik alan formunu render et
     function renderCustomFieldsInput() {
       const container = document.getElementById('customFieldsContainer');
       container.innerHTML = '';
@@ -123,7 +129,6 @@
       });
     }
 
-    // Profil kartlarını ekrana yazdır
     function renderStudents() {
       const cardsContainer = document.getElementById('studentCards');
       const searchQuery = document.getElementById('searchInput').value.toLowerCase();
@@ -196,7 +201,6 @@
               </div>
             </div>
 
-            <!-- Öğretmen Dipnot Alanı -->
             ${student.notes ? `
               <div class="p-3 bg-amber-50 border-t border-amber-200 text-xs text-amber-900 italic">
                 <span class="font-bold not-italic block mb-0.5 text-amber-800">📌 Öğretmen Dipnotu:</span>
@@ -210,7 +214,6 @@
       localStorage.setItem('myClassStudentsProfile', JSON.stringify(students));
     }
 
-    // Form kaydetme / güncelleme
     document.getElementById('studentForm').addEventListener('submit', function(e) {
       e.preventDefault();
       const index = document.getElementById('studentIndex').value;
@@ -284,7 +287,6 @@
       document.getElementById('saveBtn').innerText = 'Profili Kaydet';
     }
 
-    // Özel Alan Ekleme Fonksiyonu
     function openCustomFieldModal() {
       const fieldLabel = prompt("Eklenecek yeni özelliğin adını girin (Örn: Kan Grubu, Veli Telefon, Alerji):");
       if (fieldLabel) {
@@ -296,7 +298,6 @@
       }
     }
 
-    // Excel'e Dışa Aktar
     function exportToExcel() {
       const exportData = students.map(s => {
         const row = {
@@ -325,6 +326,27 @@
 
     renderCustomFieldsInput();
     renderStudents();
+
+    // OTOMATİK İNTERNETSİZ ÇALIŞMA KODU (Service Worker)
+    if ('serviceWorker' in navigator) {
+      const swCode = `
+        const CACHE_NAME = 'sinif-pwa-v1';
+        const urlsToCache = [
+          './',
+          'https://cdn.tailwindcss.com',
+          'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'
+        ];
+        self.addEventListener('install', e => {
+          e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(urlsToCache)));
+        });
+        self.addEventListener('fetch', e => {
+          e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
+        });
+      `;
+      const blob = new Blob([swCode], { type: 'application/javascript' });
+      const swUrl = URL.createObjectURL(blob);
+      navigator.serviceWorker.register(swUrl).catch(() => {});
+    }
   </script>
 </body>
 </html>
